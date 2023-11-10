@@ -120,31 +120,14 @@ public class CSVParser implements SuaferParser{
 
         List<T> instanceList = new ArrayList<>();
         for (List<Object> data : dataList) {
-            T instance = createNewClassInstans(data, cls);
+            InstansFactory instansFactory = new InstansFactory();
+            T instance = instansFactory.createNewClassInstans(data, cls);
             instanceList.add(instance);
         }
 
         return instanceList;
     }
 
-    private  <T> T createNewClassInstans(List<Object> data, Class<T> clazz) throws IllegalAccessException, InstantiationException {
-        T instance = clazz.newInstance();
-
-        Field[] fields = clazz.getDeclaredFields();
-        if(fields.length!=data.size()){
-            makeError("Error in file syntax, class fields do not correspond to file variables");
-            return null;
-        }
-
-        for (int i = 0; i < fields.length && i < data.size(); i++) {
-            Field field = fields[i];
-
-            field.setAccessible(true);
-            field.set(instance, getValue(data.get(i)));
-        }
-
-        return instance;
-    }
 
     private void getValueFromString(List<List<Object>> data, String s){
         String[] array = s.split("\n");
@@ -164,17 +147,6 @@ public class CSVParser implements SuaferParser{
             }
             data.add(test);
         }
-    }
-
-    private Object getValue(Object o){
-        if(o.getClass().getSimpleName().equals("Integer")){
-            int i = (int) o;
-            return i;
-        }if(o.getClass().getSimpleName().equals("Double")){
-            return (double) o;
-        }
-
-        return String.valueOf(o);
     }
 
 

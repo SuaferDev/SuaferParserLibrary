@@ -151,19 +151,16 @@ public class JSONParser implements SuaferParser{
 
     private void getParameterFromList(List<Parameter> data, String s){
         String[] array = s.split("\n");
-        for(int i=0; i<array.length; i++)System.out.println(i+" "+ array[i]);
         int i=0;
         while(i<array.length){
             if(array[i].trim().length()>2) {
                 String stroke = array[i].trim();
                 if (getStringType(stroke) == 1) {
                     data.add(getLastUsualParameter(stroke.trim()));
-                    System.out.println(getLastUsualParameter(stroke).getName() + " "+ getLastUsualParameter(stroke).getValue().getClass().getSimpleName());
                     i++;
                 } else {
                     if (getStringType(stroke) == 2) {
                         data.add(getUsualParameter(stroke));
-                        System.out.println(getUsualParameter(stroke).getName() + " "+ getUsualParameter(stroke).getValue());
                         i++;
                     } else {
                         if (getStringType(stroke) == 3) {
