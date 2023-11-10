@@ -11,12 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-@interface ToJSON {
-}
-
-public class JSONParser {
+public class JSONParser implements SuaferParser{
 
     /** Вспомогательные методы */
     private String readFromFile(String path){
@@ -41,10 +36,10 @@ public class JSONParser {
 
 
     /** Методы для превращения экземпляра класса в json*/
-    public void objectToJson(Object object, String path){
+    public void parseObject(Object object, String path){
         String s = "{"+"\n";
         Class<?> cls = object.getClass();
-        if (cls.isAnnotationPresent(ToJSON.class)) {
+        if (cls.isAnnotationPresent(DoParse.class)) {
             for (Field field : cls.getDeclaredFields()) {
                 field.setAccessible(true);
                 try {
@@ -146,7 +141,7 @@ public class JSONParser {
 
 
     /** Методы для превращения json в экземпляр класса*/
-    public <T> T jsonToObject(String path, Class<T> cls) throws IllegalAccessException, InstantiationException {
+    public <T> Object parseFile(String path, Class<T> cls) throws IllegalAccessException, InstantiationException {
         String s = readFromFile(path);
         List<Parameter> data = new ArrayList<>();
         getParameterFromList(data, s);

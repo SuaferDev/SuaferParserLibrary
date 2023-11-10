@@ -2,21 +2,12 @@ package org.example;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-@interface ToCSV {
-}
-
-public class CSVParser {
+public class CSVParser implements SuaferParser{
 
     /** Вспомогательные методы */
     private String readFromFile(String path){
@@ -40,48 +31,36 @@ public class CSVParser {
     private void makeWarning(String error_text){System.out.println(ERROR_WARNING+"Warning:\n" + error_text+DEFAULT_COlOR);}
 
 
-    public boolean analysisClass(Object object){
-        if(object==null){
-            makeError("Expected class, got null");
-            return false;
-        }
-        Class<?> cls = object.getClass();
-        if (cls.isAnnotationPresent(ToCSV.class)){
-            for(Field field : cls.getDeclaredFields()){
-                field.setAccessible(true);
-            }
-        }else{
-            makeError("No to CSV annotation for conversion");
-            return false;
-        }
-
-        return true;
-    }
-
 
     /** Методы для превращения экземпляра класса в csv*/
-    public void objectToCSV(Object object, String path, String separator_character){
+    public void parseObject(Object object, String path){
+        if (object instanceof Object[]) {
+            pleaseMakeAFileFromTheClassArray((Object[]) object, path);
+        } else if (object instanceof Object) {
+            pleaseMakeAFileFromTheClass(object, path);
+        }
+    }
+
+    private void pleaseMakeAFileFromTheClass(Object object, String path){
         if(object==null){
             makeWarning("null is accepted as input -> nothing is written");
             return;
         }
         String s = "";
         Class<?> cls = object.getClass();
-        if (cls.isAnnotationPresent(ToCSV.class)) {
-            //Записываем поля таблицы из названия переменных
+        if (cls.isAnnotationPresent(DoParse.class)) {
             for(Field field : cls.getDeclaredFields()){
                 field.setAccessible(true);
-                s=s+field.getName()+separator_character;
+                s=s+field.getName()+";";
             }
             s=s.substring(0, s.length() - 1);
             s=s+"\n";
 
-            //Записываем значения полей объектов
             for (Field field : cls.getDeclaredFields()) {
                 field.setAccessible(true);
                 try {
                     Object value = field.get(object);
-                    s+=value+separator_character;
+                    s+=value+";";
                 } catch (IllegalAccessException e) {
                     makeError("Error processing class\n");
                 }
@@ -92,7 +71,7 @@ public class CSVParser {
         writeToFile(path,s);
     }
 
-    public void objectsToCSV(Object[] objects, String path, String separator_character){
+    private void pleaseMakeAFileFromTheClassArray(Object[] objects, String path){
         if(objects.length==0){
             makeWarning("Empty data for writing is accepted as input -> nothing is written");
             return;
@@ -103,22 +82,20 @@ public class CSVParser {
         for(Object o : objects){
             clsList.add(o.getClass());
         }
-        if (clsList.get(0).isAnnotationPresent(ToCSV.class)) {
-            //Записываем поля таблицы из названия переменных
+        if (clsList.get(0).isAnnotationPresent(DoParse.class)) {
             for(Field field : clsList.get(0).getDeclaredFields()){
                 field.setAccessible(true);
-                s=s+field.getName()+separator_character;
+                s=s+field.getName()+";";
             }
             s=s.substring(0, s.length() - 1);
             s=s+"\n";
 
-            //Записываем значения полей объектов
             for(int i=0; i<clsList.size();i++){
                 for (Field field : clsList.get(i).getDeclaredFields()) {
                     field.setAccessible(true);
                     try {
                         Object value = field.get(objects[i]);
-                        s+=value+separator_character;
+                        s+=value+";";
                     } catch (IllegalAccessException e) {
                         makeError("Error processing class\n");
                     }
@@ -132,7 +109,7 @@ public class CSVParser {
 
 
     /** Методы для превращения csv в экземпляр класса*/
-    public <T> List<T> csvToList(String path, Class<T> cls) throws IllegalAccessException, InstantiationException {
+    public <T> List<T> parseFile(String path, Class<T> cls) throws IllegalAccessException, InstantiationException {
         String s = readFromFile(path);
         List<List<Object>> dataList = new ArrayList<>();
         getValueFromString(dataList, s);
